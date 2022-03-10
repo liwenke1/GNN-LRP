@@ -229,7 +229,7 @@ class Devign(InMemoryDataset):
 
     def process(self):
         data_list = []
-        with open('/home/DIG-main/dig/xgraph/GNNExplainer/benchmark/data/dataset_rec.txt','r') as f:
+        with open('/home/DIG-main/dig/xgraph/GNN-LRP/benchmark/data/dataset_rec.txt','r') as f:
             dataset_path = f.readlines()
         i = 0
         for path in dataset_path:
@@ -237,8 +237,6 @@ class Devign(InMemoryDataset):
             if(data.num_nodes >= 15):
                 data_list.append(data)
                 i += 1
-                if i > 7:
-                    break
         data, slices = self.collate(data_list)
         torch.save((data, slices), self.processed_paths[0])
         

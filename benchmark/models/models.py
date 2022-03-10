@@ -6,6 +6,7 @@ Project: GNN_benchmark
 Author: Shurui Gui
 """
 
+from asyncio import FastChildWatcher
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -440,9 +441,8 @@ class GraphSequential(nn.Sequential):
 
 
 class DevignModel(nn.Module):
-    def __init__(self, model_args, input_dim=100, output_dim=200, max_edge_types=4, num_steps=8):
+    def __init__(self, input_dim=100, output_dim=200, max_edge_types=4, num_steps=8):
         super(DevignModel, self).__init__()
-        self.device = model_args.device
         self.inp_dim = input_dim
         self.out_dim = output_dim
         self.max_edge_types = max_edge_types
@@ -488,8 +488,8 @@ class DevignModel(nn.Module):
             return graph, features, edge_types
         pass
 
-    def forward(self, x, edge_index, edge_attr):
-        graph, features, edge_types = edge_index, x, edge_attr
+    def forward(self, batch, cuda=False):
+        graph, features, edge_types = self.get_network_inputs(batch, cuda=True)
         graph = graph.to(torch.device("cuda:0"))
         features = features.to(torch.device("cuda:0"))
         edge_types = edge_types.to(torch.device("cuda:0"))

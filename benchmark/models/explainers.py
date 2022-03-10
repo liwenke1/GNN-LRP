@@ -449,7 +449,7 @@ class ExplainerBase(nn.Module):
 
         return ax, G
 
-    def type_conversion(x, edge_index, edge_attr):
+    def type_conversion(self, x, edge_index, edge_attr):
         graph = DGLGraph()
         x=x.cpu()
         graph.add_nodes(len(x), data={'features': torch.FloatTensor(x)})
@@ -520,7 +520,8 @@ class WalkBase(ExplainerBase):
         # --- register hooks ---
         self.model.apply(register_hook)
 
-        pred = self.model(x, edge_index, edge_attr)
+        graph = self.type_conversion(x, edge_index, edge_attr)
+        pred = self.model(graph, cuda=True)
 
         for hook in hooks:
             hook.remove()
@@ -599,21 +600,25 @@ class WalkBase(ExplainerBase):
             # origin pred
             for edge_mask in self.edge_mask:
                 edge_mask.data = float('inf') * torch.ones(mask.size(), device=data_args.device)
-            ori_pred = self.model(x, edge_index, edge_attr)
+            graph = self.type_conversion(x, edge_index, edge_attr)
+            ori_pred = self.model(graph, cuda=True)
 
             for edge_mask in self.edge_mask:
                 edge_mask.data = mask
-            masked_pred = self.model(x, edge_index, edge_attr)
+            graph = self.type_conversion(x, edge_index, edge_attr)
+            masked_pred = self.model(graph, cuda=True)
 
             # mask out important elements for fidelity calculation
             for edge_mask in self.edge_mask:
                 edge_mask.data = - mask
-            maskout_pred = self.model(x, edge_index, edge_attr)
+            graph = self.type_conversion(x, edge_index, edge_attr)
+            maskout_pred = self.model(graph, cuda=True)
 
             # zero_mask
             for edge_mask in self.edge_mask:
                 edge_mask.data = - float('inf') * torch.ones(mask.size(), device=data_args.device)
-            zero_mask_pred = self.model(x, edge_index, edge_attr)
+            graph = self.type_conversion(x, edge_index, edge_attr)
+            zero_mask_pred = self.model(graph, cuda=True)
 
             # Store related predictions for further evaluation.
             related_preds.append({'zero': zero_mask_pred[node_idx],

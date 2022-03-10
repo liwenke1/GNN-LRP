@@ -34,7 +34,7 @@ def config_model(model: torch.nn.Module, args, mode: str) -> None:
     # load checkpoint
     if mode == 'train' and args.tr_ctn:
         ckpt = torch.load(os.path.join(args.ckpt_dir, f'{args.model_name}_last.ckpt'))
-        model.load_state_dict(ckpt['state_dict'])
+        model.load_state_dict(ckpt)
         args.ctn_epoch = ckpt['epoch'] + 1
         print(f'#IN#Continue training from Epoch {ckpt["epoch"]}...')
 
@@ -44,6 +44,6 @@ def config_model(model: torch.nn.Module, args, mode: str) -> None:
         except FileNotFoundError:
             print(f'#E#Checkpoint not found at {os.path.abspath(args.test_ckpt)}')
             exit(1)
-        model.load_state_dict(ckpt['state_dict'])
+        model.load_state_dict(ckpt)
         print(f'#IN#Loading best Checkpoint ...')
 
