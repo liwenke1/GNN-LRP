@@ -71,6 +71,8 @@ from benchmark.models.ext.deeplift.layer_deep_lift import LayerDeepLift, DeepLif
 import shap
 import time
 
+from dgl import DGLGraph
+
 EPS = 1e-15
 
 
@@ -447,6 +449,17 @@ class ExplainerBase(nn.Module):
 
         return ax, G
 
+    def type_conversion(x, edge_index, edge_attr):
+        graph = DGLGraph()
+        x=x.cpu()
+        graph.add_nodes(len(x), data={'features': torch.FloatTensor(x)})
+        edge_index_list = edge_index.cpu().t().numpy().tolist()
+        edge_attr_list = edge_attr.cpu().numpy().tolist()
+        for i in range(len(edge_index_list)):
+            graph.add_edges(edge_index_list[i][0], edge_index_list[i][1], data={'etype': torch.LongTensor([edge_attr_list[i][0]])})
+        
+        return graph
+
     def eval_related_pred(self, x, edge_index, edge_masks, **kwargs):
 
         node_idx = kwargs.get('node_idx')
@@ -488,7 +501,7 @@ class WalkBase(ExplainerBase):
     def __init__(self, model: nn.Module, epochs=0, lr=0, explain_graph=False, molecule=False):
         super().__init__(model, epochs, lr, explain_graph, molecule)
 
-    def extract_step(self, x, edge_index, detach=True, split_fc=False):
+    def extract_step(self, x, edge_index, edge_attr, detach=True, split_fc=False):
 
         layer_extractor = []
         hooks = []
@@ -507,7 +520,7 @@ class WalkBase(ExplainerBase):
         # --- register hooks ---
         self.model.apply(register_hook)
 
-        pred = self.model(x, edge_index)
+        pred = self.model(x, edge_index, edge_attr)
 
         for hook in hooks:
             hook.remove()
@@ -575,7 +588,7 @@ class WalkBase(ExplainerBase):
 
         return walk_indices_list
 
-    def eval_related_pred(self, x, edge_index, masks, **kwargs):
+    def eval_related_pred(self, x, edge_index, edge_attr, masks, **kwargs):
 
         node_idx = kwargs.get('node_idx')
         node_idx = 0 if node_idx is None else node_idx # graph level: 0, node level: node_idx
@@ -586,21 +599,21 @@ class WalkBase(ExplainerBase):
             # origin pred
             for edge_mask in self.edge_mask:
                 edge_mask.data = float('inf') * torch.ones(mask.size(), device=data_args.device)
-            ori_pred = self.model(x=x, edge_index=edge_index, **kwargs)
+            ori_pred = self.model(x, edge_index, edge_attr)
 
             for edge_mask in self.edge_mask:
                 edge_mask.data = mask
-            masked_pred = self.model(x=x, edge_index=edge_index, **kwargs)
+            masked_pred = self.model(x, edge_index, edge_attr)
 
             # mask out important elements for fidelity calculation
             for edge_mask in self.edge_mask:
                 edge_mask.data = - mask
-            maskout_pred = self.model(x=x, edge_index=edge_index, **kwargs)
+            maskout_pred = self.model(x, edge_index, edge_attr)
 
             # zero_mask
             for edge_mask in self.edge_mask:
                 edge_mask.data = - float('inf') * torch.ones(mask.size(), device=data_args.device)
-            zero_mask_pred = self.model(x=x, edge_index=edge_index, **kwargs)
+            zero_mask_pred = self.model(x, edge_index, edge_attr)
 
             # Store related predictions for further evaluation.
             related_preds.append({'zero': zero_mask_pred[node_idx],
@@ -734,12 +747,13 @@ class GNN_LRP(WalkBase):
     def forward(self,
                 x: Tensor,
                 edge_index: Tensor,
+                edge_attr: Tensor,
                 **kwargs
                 ):
         super().forward(x, edge_index, **kwargs)
         self.model.eval()
 
-        walk_steps, fc_steps = self.extract_step(x, edge_index, detach=False, split_fc=True)
+        walk_steps, fc_steps = self.extract_step(x, edge_index, edge_attr, detach=False, split_fc=True)
 
 
         edge_index_with_loop, _ = add_self_loops(edge_index, num_nodes=self.num_nodes)
@@ -889,12 +903,12 @@ class GNN_LRP(WalkBase):
                 ex_labels = tuple(torch.tensor([label]).to(data_args.device) for label in labels)
                 masks = []
                 for ex_label in ex_labels:
-                    edge_attr = self.explain_edges_with_loop(x, walks, ex_label)
-                    mask = edge_attr
+                    edge_attrs = self.explain_edges_with_loop(x, walks, ex_label)
+                    mask = edge_attrs
                     mask = self.control_sparsity(mask, kwargs.get('sparsity'))
                     masks.append(mask.detach())
 
-                related_preds = self.eval_related_pred(x, edge_index, masks, **kwargs)
+                related_preds = self.eval_related_pred(x, edge_index, edge_attr, masks, **kwargs)
 
         return walks, masks, related_preds
 

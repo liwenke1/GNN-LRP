@@ -93,7 +93,7 @@ def sample_explain(explainer, data, x_collector: XCollector, **kwargs):
 
     explain_tik = time.time()
     walks, masks, related_preds = \
-        explainer(data.x, data.edge_index, **kwargs)
+        explainer(data.x, data.edge_index, data.edge_attr, **kwargs)
     explain_tok = time.time()
     print(f"#D#Explainer prediction time: {explain_tok - explain_tik:.4f}")
 

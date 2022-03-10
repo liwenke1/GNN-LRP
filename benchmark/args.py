@@ -21,13 +21,13 @@ class GeneralArgs(Tap):
     val_bs: int = 3000                   # batch size for validation
     test_bs: int = 3000                  # batch size for test
     x_bs: int = 1                        # batch size for explain
-    dataset_name: str = 'Tox21'              # dataset
-    model_name: str = 'GCN'  # specify model name
+    dataset_name: str = 'devign'              # dataset
+    model_name: str = 'DevignModel'  # specify model name
     explainer: str = 'GNNExplainer'
     dataset_type: Literal['nlp', 'mol'] = 'mol'  # dataset type
     model_level: Literal['node', 'line', 'graph'] = 'graph'  # model level
     task_type: Literal['bcs', 'mcs', 'reg-l1'] = 'bcs'      # task type: b/m classification or regression
-    target_idx: int = -1  # choose one target from multi-target task
+    target_idx: int = 0  # choose one target from multi-target task
     email: bool = False                 # email you after process down please use mail_setting.json
     explain_idx: int = 0                # default explain_idx 0
     log_file: str = 'pipeline.log'      # log file, root_dir: ROOT_DIR/log

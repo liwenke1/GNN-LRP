@@ -48,7 +48,7 @@ class Metric(object):
                 "PCBA": "bcs", "MUV": "bcs", "HIV": "bcs",
                 "BACE": "bcs", "BBPB": "bcs", "Tox21": "bcs",
                 "ToxCast": "bcs", "SIDER": "bcs", "ClinTox": "bcs",
-                "ba_lrp": "bcs", "ba_shape": "mcs"}
+                "ba_lrp": "bcs", "ba_shape": "mcs","devign": "bcs"}
     set2task = {item[0].lower(): item[1] for item in set2task.items()}
     task2loss = {
         'bcs': cross_entropy_with_logit,
@@ -59,7 +59,7 @@ class Metric(object):
                       "PCBA": "prc-auc", "MUV": "prc-auc", "HIV": "roc-auc",
                       "BACE": "accuracy", "BBPB": "roc-auc", "Tox21": "accuracy",
                       "ToxCast": "roc-auc", "SIDER": "roc-auc", "ClinTox": "accuracy",
-                      "ba_lrp": "accuracy", "ba_shape": "accuracy"}
+                      "ba_lrp": "accuracy", "ba_shape": "accuracy", "devign": "accuracy"}
     set2score_name = {item[0].lower(): item[1] for item in set2score_name.items()}
     score_name = ''
 
